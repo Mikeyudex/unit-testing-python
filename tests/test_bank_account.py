@@ -1,7 +1,9 @@
 import unittest
+from unittest.mock import patch
 import os
 
 from src.bank_account import BankAccount
+from src.exceptions import InsufficientFundsError, WithdrawalTimeRestrictionError
 
 class BankAccountTests(unittest.TestCase):
 
@@ -17,22 +19,46 @@ class BankAccountTests(unittest.TestCase):
         with open(filename, "r") as f:
             return len(f.readlines())
 
-    def test_deposit(self):
+    def test_deposit_increases_balance_by_deposit_amount(self):
         new_balance = self.account.deposit(500)
-        self.assertEqual(new_balance, 1500, 'El balance no es igual')
+        self.assertEqual(new_balance, 1500, "El balance no es igual")
 
-    def test_withdraw(self):
+    def test_withdraw_decreases_balance_by_withdraw_amount(self):
         new_balance = self.account.withdraw(200)
-        self.assertEqual(new_balance, 800, 'El balance no es igual')
+        self.assertEqual(new_balance, 800, "El balance no es igual")
     
-    def test_get_balance(self):
-        self.assertEqual(self.account.get_balance(), 1000, 'El balance no es igual')
+    def test_get_balance_returns_current_balance(self):
+        self.assertEqual(self.account.get_balance(), 1000)
     
-    def test_transaction_log(self):
+    def test_deposit_logs_transaction(self):
         self.account.deposit(500)
-        self.assertTrue(os.path.exists("transaction_log.txt"), 'El archivo transaction_log no existe')
+        self.assertTrue(os.path.exists("transaction_log.txt"))
 
-    def test_count_transaction(self):
-        self.assertEqual(self._count_lines(self.account.log_file), 1, 'La cantidad de lineas del archivo no coinciden')
+    def test_withdraw_logs_each_transaction(self):
+        self.assertEqual(self._count_lines(self.account.log_file), 1)
         self.account.deposit(500)
-        self.assertEqual(self._count_lines(self.account.log_file), 2, 'La cantidad de lineas del archivo no coinciden')
+        self.assertEqual(self._count_lines(self.account.log_file), 2)
+
+    def test_withdraw_raises_error_when_insufficient_funds(self):
+        with self.assertRaises(InsufficientFundsError):
+            self.account.withdraw(2000)
+    
+    @patch("src.bank_account.datetime")
+    def test_withdraw_during_bussines_hours(self, mock_datetime):
+        mock_datetime.now.return_value.hour = 10
+        new_balance = self.account.withdraw(100)
+        self.assertEqual(new_balance, 900)
+    
+    @patch("src.bank_account.datetime")
+    def test_withdraw_disallow_before_business_hours(self, mock_datetime): #se prueba que en realidad el metodo devuelva la excepción WithdrawalTimeRestrictionError
+        mock_datetime.now.return_value.hour = 7
+        with self.assertRaises(WithdrawalTimeRestrictionError):
+            self.account.withdraw(100)
+
+    @patch("src.bank_account.datetime")
+    def test_withdraw_disallow_after_business_hours(self, mock_datetime): #se prueba que en realidad el metodo devuelva la excepción WithdrawalTimeRestrictionError
+        mock_datetime.now.return_value.hour = 18
+        with self.assertRaises(WithdrawalTimeRestrictionError):
+            self.account.withdraw(100)
+
+        
