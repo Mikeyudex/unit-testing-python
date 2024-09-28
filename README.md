@@ -13,3 +13,19 @@ py -m unittest tests.test_calculator.CalculatorTests
 ## ejecutar pruebas con doctest
 
 py -m doctest src/calculator.py
+
+## excluir los archivos de test
+
+coverage run --source src -m unittest
+
+## ejecutar coverage
+
+coverage run -m unittest discover tests
+
+## generar reporte de coverage
+
+coverage report
+
+## generar reporte de coverage en html
+
+coverage html
