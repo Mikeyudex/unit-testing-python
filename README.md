@@ -29,3 +29,7 @@ coverage report
 ## generar reporte de coverage en html
 
 coverage html
+
+## ejecutar pruebas con pytest
+
+pytest tests/test_pytest.py -v
